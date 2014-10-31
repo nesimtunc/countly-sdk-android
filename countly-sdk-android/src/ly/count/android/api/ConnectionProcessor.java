@@ -34,7 +34,7 @@ import java.net.URLConnection;
 
 /**
  * ConnectionProcessor is a Runnable that is executed on a background
- * thread to submit session & event data to a Count.ly server.
+ * thread to submit session &amp; event data to a Count.ly server.
  *
  * NOTE: This class is only public to facilitate unit testing, because
  *       of this bug in dexmaker: https://code.google.com/p/dexmaker/issues/detail?id=34

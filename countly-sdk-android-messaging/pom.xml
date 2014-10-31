@@ -5,12 +5,12 @@
 
     <modelVersion>4.0.0</modelVersion>
     <groupId>ly.count</groupId>
-    <artifactId>sdk-android</artifactId>
+    <artifactId>sdk-android-messaging</artifactId>
     <version>14.11</version>
     <packaging>jar</packaging>
 
-    <name>Countly Android SDK</name>
-    <description>An SDK for using Countly mobile analytics system in your Android app.</description>
+    <name>Countly Messaging Android SDK</name>
+    <description>An SDK for using Countly mobile analytics system along with Countly Messaging in your Android app.</description>
     <url>http://count.ly</url>
     <licenses>
         <license>

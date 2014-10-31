@@ -4,6 +4,8 @@ gen/
 out/
 bin/
 /countly-sdk-android/build/
+/countly-sdk-android-messaging/build/
+/countly-android-example-messaging/build/
 .settings/
 .classpath
 .project

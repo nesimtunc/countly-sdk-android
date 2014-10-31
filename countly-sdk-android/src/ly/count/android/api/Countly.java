@@ -25,6 +25,7 @@ import java.net.*;
 import java.util.*;
 import java.util.concurrent.*;
 
+import android.app.Activity;
 import android.content.Context;
 
 /**
@@ -36,7 +37,7 @@ public class Countly {
     /**
      * Current version of the Count.ly Android SDK as a displayable string.
      */
-    public static final String COUNTLY_SDK_VERSION_STRING = "14.08";
+    public static final String COUNTLY_SDK_VERSION_STRING = "14.11";
     /**
      * Default string used in the begin session metrics if the
      * app version cannot be found.
@@ -57,6 +58,17 @@ public class Countly {
      */
     private static final long TIMER_DELAY_IN_SECONDS = 60;
 
+    /**
+     * Enum used in Countly.initMessaging() method which controls what kind of
+     * app installation it is. Later (in Countly Dashboard or when calling Countly API method),
+     * you'll be able to choose whether you want to send a message to test devices,
+     * or to production ones.
+     */
+    public static enum CountlyMessagingMode {
+        TEST,
+        PRODUCTION,
+    }
+
     // see http://stackoverflow.com/questions/7048198/thread-safe-singletons-in-java
     private static class SingletonHolder {
         static final Countly instance = new Countly();
@@ -70,6 +82,7 @@ public class Countly {
     private int activityCount_;
     private boolean disableUpdateSessionRequests_;
     private boolean enableLogging_;
+    private Countly.CountlyMessagingMode messagingMode_;
 
     /**
      * Returns the Countly singleton.
@@ -99,12 +112,13 @@ public class Countly {
      * Device ID is supplied by OpenUDID service, see <a href="https://github.com/Countly/countly-sdk-android">Countly</a> for instructions.
      * @param context application context
      * @param serverURL URL of the Countly server to submit data to; use "https://cloud.count.ly" for Countly Cloud
-     * @param appKey app key for the application being tracked; find in the Countly Dashboard under Management > Applications
+     * @param appKey app key for the application being tracked; find in the Countly Dashboard under Management &gt; Applications
+     * @return Countly instance for easy method chaining
      * @throws java.lang.IllegalArgumentException if context, serverURL, appKey, or deviceID are invalid
      * @throws java.lang.IllegalStateException if the Countly SDK has already been initialized
      */
-    public void init(final Context context, final String serverURL, final String appKey) {
-        init(context, serverURL, appKey, null);
+    public Countly init(final Context context, final String serverURL, final String appKey) {
+        return init(context, serverURL, appKey, null);
     }
 
     /**
@@ -112,12 +126,13 @@ public class Countly {
      * Must be called before other SDK methods can be used.
      * @param context application context
      * @param serverURL URL of the Countly server to submit data to; use "https://cloud.count.ly" for Countly Cloud
-     * @param appKey app key for the application being tracked; find in the Countly Dashboard under Management > Applications
+     * @param appKey app key for the application being tracked; find in the Countly Dashboard under Management &gt; Applications
      * @param deviceID unique ID for the device the app is running on; note that null in deviceID means that Countly will use OpenUDID
+     * @return Countly instance for easy method chaining
      * @throws java.lang.IllegalArgumentException if context, serverURL, appKey, or deviceID are invalid
      * @throws java.lang.IllegalStateException if init has previously been called with different values during the same application instance
      */
-    public synchronized void init(final Context context, final String serverURL, final String appKey, final String deviceID) {
+    public synchronized Countly init(final Context context, final String serverURL, final String appKey, final String deviceID) {
         if (context == null) {
             throw new IllegalArgumentException("valid context is required");
         }
@@ -137,6 +152,10 @@ public class Countly {
                                     !connectionQueue_.getAppKey().equals(appKey) ||
                                     !DeviceInfo.deviceIDEqualsNullSafe(deviceID))) {
             throw new IllegalStateException("Countly cannot be reinitialized with different values");
+        }
+
+        if (MessagingAdapter.isMessagingAvailable()) {
+            MessagingAdapter.storeConfiguration(context, serverURL, appKey, deviceID);
         }
 
         // if we get here and eventQueue_ != null, init is being called again with the same values,
@@ -159,10 +178,53 @@ public class Countly {
 
         // context is allowed to be changed on the second init call
         connectionQueue_.setContext(context);
+        return this;
     }
 
     /**
-     * Immediately disables session & event tracking and clears any stored session & event data.
+     * Checks whether Countly.init has been already called.
+     * @return true if Countly is ready to use
+     */
+    public synchronized boolean isInitialized() {
+        return eventQueue_ != null;
+    }
+
+    /**
+     * Initializes the Countly MessagingSDK. Call from your main Activity's onCreate() method.
+     * @param activity application activity which acts as a final destination for notifications
+     * @param activityClass application activity class which acts as a final destination for notifications
+     * @param projectID ProjectID for this app from Google API Console
+     * @param mode whether this app installation is a test release or production
+     * @return Countly instance for easy method chaining
+     * @throws java.lang.IllegalStateException if no CountlyMessaging class is found (you need to use countly-messaging-sdk-android library instead of countly-sdk-android)
+     */
+    public Countly initMessaging(Activity activity, Class<? extends Activity> activityClass, String projectID, Countly.CountlyMessagingMode mode) {
+        return initMessaging(activity, activityClass, projectID, null, mode);
+    }
+    /**
+     * Initializes the Countly MessagingSDK. Call from your main Activity's onCreate() method.
+     * @param activity application activity which acts as a final destination for notifications
+     * @param activityClass application activity class which acts as a final destination for notifications
+     * @param projectID ProjectID for this app from Google API Console
+     * @param buttonNames Strings to use when displaying Dialogs (uses new String[]{"Open", "Review"} bu default)
+     * @param mode whether this app installation is a test release or production
+     * @return Countly instance for easy method chaining
+     * @throws java.lang.IllegalStateException if no CountlyMessaging class is found (you need to use countly-messaging-sdk-android library instead of countly-sdk-android)
+     */
+    public synchronized Countly initMessaging(Activity activity, Class<? extends Activity> activityClass, String projectID, String[] buttonNames, Countly.CountlyMessagingMode mode) {
+        if (mode != null && !MessagingAdapter.isMessagingAvailable()) {
+            throw new IllegalStateException("you need to include countly-messaging-sdk-android library instead of countly-sdk-android if you want to use Countly Messaging");
+        } else {
+            if (!MessagingAdapter.init(activity, activityClass, projectID, buttonNames)) {
+                throw new IllegalStateException("couldn't initialize Countly Messaging");
+            }
+        }
+        messagingMode_ = mode;
+        return this;
+    }
+
+    /**
+     * Immediately disables session &amp; event tracking and clears any stored session &amp; event data.
      * This API is useful if your app has a tracking opt-out switch, and you want to immediately
      * disable tracking when a user opts out. The onStart/onStop/recordEvent methods will throw
      * IllegalStateException after calling this until Countly is reinitialized by calling init
@@ -246,6 +308,13 @@ public class Countly {
     }
 
     /**
+     * Called when GCM Registration ID is received. Sends a token session event to the server.
+     */
+    public void onRegistrationId(String registrationId) {
+        connectionQueue_.tokenSession(registrationId, messagingMode_);
+    }
+
+    /**
      * Records a custom event with no segmentation values, a count of one and a sum of zero.
      * @param key name of the custom event, required, must not be the empty string
      * @throws IllegalStateException if Countly SDK has not been initialized
@@ -301,7 +370,7 @@ public class Countly {
      *                                  segmentation contains null or empty keys or values
      */
     public synchronized void recordEvent(final String key, final Map<String, String> segmentation, final int count, final double sum) {
-        if (eventQueue_ == null) {
+        if (!isInitialized()) {
             throw new IllegalStateException("Countly.sharedInstance().init must be called before recordEvent");
         }
         if (key == null || key.length() == 0) {
@@ -331,17 +400,21 @@ public class Countly {
      * containing session duration time. This method allows you to disable such behavior.
      * Note that event updates will still be sent every 10 events or 30 seconds after event recording.
      * @param disable whether or not to disable session time updates
+     * @return Countly instance for easy method chaining
      */
-    public synchronized void setDisableUpdateSessionRequests(final boolean disable) {
+    public synchronized Countly setDisableUpdateSessionRequests(final boolean disable) {
         disableUpdateSessionRequests_ = disable;
+        return this;
     }
 
     /**
      * Sets whether debug logging is turned on or off. Logging is disabled by default.
      * @param enableLogging true to enable logging, false to disable logging
+     * @return Countly instance for easy method chaining
      */
-    public synchronized void setLoggingEnabled(final boolean enableLogging) {
+    public synchronized Countly setLoggingEnabled(final boolean enableLogging) {
         enableLogging_ = enableLogging;
+        return this;
     }
 
     public synchronized boolean isLoggingEnabled() {

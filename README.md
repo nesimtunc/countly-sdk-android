@@ -33,7 +33,7 @@ dependencies {
 &lt;dependency&gt;
     &lt;groupId&gt;ly.count&lt;/groupId&gt;
     &lt;artifactId&gt;sdk-android&lt;/artifactId&gt;
-    &lt;version&gt;14.08&lt;/version&gt;
+    &lt;version&gt;14.11&lt;/version&gt;
 &lt;/dependency&gt;
 </pre>
 
@@ -60,7 +60,84 @@ Additionally, make sure that *INTERNET* permission is set if there's none in you
 
 **Note:** Call `Countly.sharedInstance().init(...)` only once during onCreate of main activity. After that, call `Countly.sharedInstance().onStart()` and `Countly.sharedInstance().onStop()` in each of your activities' `onStart()` and `onStop()` methods. 
 
-###3. Use some extra features
+###3. Use Countly Messaging
+Countly can send messages to your users too! To enable it, go to Google API Console and turn GCM on for your app. Then, instead of `ly.count:sdk-android:+` dependency or `sdk-android-14.11.jar`, use `ly.count:sdk-android-messaging:+` and `sdk-android-messaging-14.11.jar` respectively. Additionally, you'll need to enable GCM itself (see `countly-android-example-messaging` folder for example app built with Android Studio):
+
+**Add extra lines in `AndroidManifest.xml`**
+
+Make sure your app requests these permissions (replace `ly.count.android.example.messaging` with your app package):
+<pre class="prettyprint">
+&lt;uses-permission android:name="android.permission.INTERNET"/&gt;
+&lt;uses-permission android:name="com.google.android.c2dm.permission.RECEIVE"/&gt;
+&lt;uses-permission android:name="android.permission.GET_ACCOUNTS"/&gt;
+&lt;uses-permission android:name="android.permission.WAKE_LOCK"/&gt;
+&lt;uses-permission android:name="ly.count.android.api.permission.C2D_MESSAGE"/&gt;
+&lt;permission android:name="ly.count.android.example.messaging.permission.C2D_MESSAGE" android:protectionLevel="signature" /&gt;
+&lt;uses-permission android:name="ly.count.android.example.messaging.permission.C2D_MESSAGE" /&gt;
+</pre>
+
+Add GMS version to the `<application>` element:
+``<meta-data android:name="com.google.android.gms.version" android:value="@integer/google_play_services_version" />``
+
+Then specify `ProxyActivity` (used to display `Dialog`'s and handle user actions), `CountlyMessaging` (it's our `WakefulBroadcastReceiver`) and `CountlyMessagingService` (`IntentService` which processes incoming notifications):
+<pre class="prettyprint">
+&lt;activity
+    android:name="ly.count.android.api.messaging.ProxyActivity"
+    android:label="@string/app_name" android:theme="@android:style/Theme.Translucent" android:noHistory="true"/&gt;
+&lt;receiver
+    android:name="ly.count.android.api.messaging.CountlyMessaging"
+    android:permission="com.google.android.c2dm.permission.SEND" &gt;
+    &lt;intent-filter&gt;
+        &lt;action android:name="com.google.android.c2dm.intent.RECEIVE" /&gt;
+        &lt;category android:name="ly.count.android.api" /&gt;
+    &lt;/intent-filter&gt;
+&lt;/receiver&gt;
+&lt;service android:name="ly.count.android.api.messaging.CountlyMessagingService" &gt;
+    &lt;meta-data android:name="broadcast_action" android:value="ly.count.android.api.broadcast" /&gt;
+&lt;/service&gt;
+
+&lt;service android:name="org.OpenUDID.OpenUDID_service"&gt;
+    &lt;intent-filter&gt;
+        &lt;action android:name="org.OpenUDID.GETUDID" /&gt;
+    &lt;/intent-filter&gt;
+&lt;/service&gt;
+</pre>
+
+**Add Support & Play Services dependencies**
+Depending on what IDE you use you'll need to include corresponding library projects, or just add a couple of new lines into your `build.gradle`:
+<pre class="prettyprint">
+dependencies {
+    compile 'com.android.support:appcompat-v7:20.0.0'
+    compile 'com.google.android.gms:play-services:5.2.08'
+}
+</pre>
+ 
+ **And, finally, change the way you init Countly**
+ <pre class="prettyprint">
+Countly.sharedInstance()
+    .init(this, "YOUR_SERVER", "APP_KEY")
+    .initMessaging(this, CountlyActivity.class, "PROJECT_ID", Countly.CountlyMessagingMode.TEST);
+</pre>
+Where `PROJECT_ID` is ID of your project from Google API Console. Note, that you can use one of two `CountlyMessagingMode`'s: `TEST` and `PRODUCTION`. This feature is very handy when you want to send your message just to your beta testers. 
+
+**There are two extra features:**
+To localize of `Dialog`s Countly show whenever text message is received you can supply additional array of strings containing localized versions of `new String[]{"Open", "Review"}`.
+
+To get notified whenever Countly receives a message, register your `BroadcastReceiver` like this:
+<pre class="prettyprint">
+IntentFilter filter = new IntentFilter();
+filter.addAction(CountlyMessaging.getBroadcastAction(getApplicationContext()));
+registerReceiver(new BroadcastReceiver() {
+    @Override
+    public void onReceive(Context context, Intent intent) {
+        Message message = intent.getParcelableExtra(CountlyMessaging.BROADCAST_RECEIVER_ACTION_MESSAGE);
+        Log.i("CountlyActivity", "Got a message with data: " + message.getData());
+    }
+}, filter);
+</pre>
+
+
+###4. Use some extra features
 **How can I make sure that requests to Countly are sent correctly?**
 
 Enable logging: `Countly.sharedInstance().setLoggingEnabled(true)`
@@ -69,8 +146,7 @@ Enable logging: `Countly.sharedInstance().setLoggingEnabled(true)`
 
 There is `custom_rules.xml` ant build file, check it out. Or you can just use sources instead of jars.
 
-
-###4. Other
+###5. Other
 
 Check Countly Server source code here: 
 

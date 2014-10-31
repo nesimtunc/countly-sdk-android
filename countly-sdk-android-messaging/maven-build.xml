@@ -1,12 +1,13 @@
 <project default="package" xmlns:artifact="antlib:org.apache.maven.artifact.ant">
     <!-- Project properties -->
     <property name="version.num" value="14.11" />
-    <property name="project" value="countly-sdk-android" />
+    <property name="project" value="countly-messaging-sdk-android" />
 
     <!-- Standard jar stuff -->
     <property name="jarfile" value="${project}-${version.num}.jar" />
     <property name="sdk.dir" value="/Applications/Android Studio.app/sdk/platforms/android-19/" />
-    <!-- <property name="lib.dir" value="libs" /> -->
+    <property name="lib.dir" value="libs" />
+    <property name="src.sdk.dir" value="../countly-sdk-android/src"/>
     <property name="src.dir" value="src"/>
     <property name="build.dir" value="build"/>
     <property name="dist.dir" location="build/dist" />
@@ -15,7 +16,7 @@
 
     <!-- Maven stuff -->
     <property name="groupId" value="ly.count" />
-    <property name="artifactId" value="sdk-android" />
+    <property name="artifactId" value="countly-messaging-sdk-android" />
     <property name="version" value="14.11-SNAPSHOT" />
 
     <!-- defined maven snapshots and staging repository id and url -->
@@ -33,7 +34,7 @@
 
     <!-- Set up classpath -->
     <path id="classpath">
-        <!-- <fileset dir="${lib.dir}" includes="**/*.jar" /> -->
+         <fileset dir="${lib.dir}" includes="**/*.jar" />
         <fileset dir="${sdk.dir}" includes="**/*.jar" />
     </path>
 
@@ -41,7 +42,11 @@
     <target name="compile" depends="clean">
         <mkdir dir="${build.dir}" />
         <mkdir dir="${classes.dir}" />
-        <javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" target="1.6" source="1.6" />
+        <javac destdir="${classes.dir}" classpathref="classpath">
+            <src path="${src.sdk.dir}" />
+            <src path="${src.dir}" />
+        </javac>
+        <!--<javac srcdir="${src.dir}" destdir="${classes.dir}" classpathref="classpath" />-->
     </target>
 
     <!-- Package a jar from compiled class files -->

@@ -30,7 +30,7 @@ import org.json.JSONObject;
 import java.util.*;
 
 /**
- * This class provides a persistence layer for the local event & connection queues.
+ * This class provides a persistence layer for the local event &amp; connection queues.
  *
  * The "read" methods in this class are not synchronized, because the underlying data store
  * provides thread-safe reads.  The "write" methods in this class are synchronized, because
