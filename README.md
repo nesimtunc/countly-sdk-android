@@ -42,7 +42,7 @@ Download [Latest JAR](https://github.com/Countly/countly-sdk-android/releases/la
 
 ###2. Set up SDK
 
-* Call `Countly.sharedInstance().init(this, "https://YOUR_SERVER", "YOUR_APP_KEY", "OPTIONAL_DEVICE_ID")` in your main activity onCreate, which requires your App key and the URL of your Countly server (use `https://cloud.count.ly` for Countly Cloud). You can either specify your own Device ID, or omit this parameter and add OpenUDID service (it will generate unique device ID automatically) to your `AndroidManifest.xml`:
+* Call `Countly.sharedInstance().init(this, "https://YOUR_SERVER", "YOUR_APP_KEY", "OPTIONAL_DEVICE_ID")` in your `Application` subclass' `onCreate` (preferred) or in your main activity `onCreate`, which requires your App key and the URL of your Countly server (use `https://cloud.count.ly` for Countly Cloud). You can either specify your own Device ID, or omit this parameter and add OpenUDID service (it will generate unique device ID automatically) to your `AndroidManifest.xml`:
 
 <pre class="prettyprint">
 &lt;service android:name=&quot;org.openudid.OpenUDID_service&quot;&gt;
@@ -145,6 +145,42 @@ Enable logging: `Countly.sharedInstance().setLoggingEnabled(true)`
 **I'm already using OpenUDID in my project, how can I remove it from build?**
 
 There is `custom_rules.xml` ant build file, check it out. Or you can just use sources instead of jars.
+
+**Provide information about user (Enterprise version only)**
+
+Provide Bundle with information about user using `Countly.sharedInstance().setUserData(bundle)`
+Possible keys are:
+<ul>
+<li>
+name - (String) providing user's full name
+</li>
+<li>
+username - (String) providing user's nickname
+</li>
+<li>
+email - (String) providing user's email address
+</li>
+<li>
+org - (String) providing user's organization's name where user works
+</li>
+<li>
+phone - (String) providing user's phone number
+</li>
+<li>
+picture - (String) providing WWW URL to user's avatar or profile picture
+</li>
+<li>
+picturePath - (String) providing local path to user's avatar or profile picture
+</li>
+<li>
+gender - (String) providing user's gender as M for male and F for female
+</li>
+<li>
+byear - (int) providing user's year of birth as integer
+</li>
+</ul>
+
+Providing value as "" for strings or negative number for byear will delete the user property
 
 ###5. Other
 

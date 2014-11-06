@@ -108,7 +108,8 @@ public class ConnectionQueue {
                           + "&timestamp=" + Countly.currentTimestamp()
                           + "&sdk_version=" + Countly.COUNTLY_SDK_VERSION_STRING
                           + "&begin_session=1"
-                          + "&metrics=" + DeviceInfo.getMetrics(context_);
+                          + "&metrics=" + DeviceInfo.getMetrics(context_)
+        				  + UserData.getDataForRequest();
 
         store_.addConnection(data);
 
@@ -126,7 +127,8 @@ public class ConnectionQueue {
         if (duration > 0) {
             final String data = "app_key=" + appKey_
                               + "&timestamp=" + Countly.currentTimestamp()
-                              + "&session_duration=" + duration;
+                              + "&session_duration=" + duration
+                              + UserData.getDataForRequest();
 
             store_.addConnection(data);
 
@@ -169,6 +171,7 @@ public class ConnectionQueue {
         if (duration > 0) {
             data += "&session_duration=" + duration;
         }
+        data += UserData.getDataForRequest();
 
         store_.addConnection(data);
 
