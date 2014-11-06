@@ -125,8 +125,9 @@ Countly.sharedInstance()
 </pre>
 Where `PROJECT_ID` is ID of your project from Google API Console. Note, that you can use one of two `CountlyMessagingMode`'s: `TEST` and `PRODUCTION`. This feature is very handy when you want to send your message just to your beta testers. 
 
+
 **There are two extra features:**
-To localize of `Dialog`s Countly show whenever text message is received you can supply additional array of strings containing localized versions of `new String[]{"Open", "Review"}`.
+To localize `Dialog`s Countly show whenever text message is received you can supply additional array of strings containing localized version of `new String[]{"Open", "Review"}`.
 
 To get notified whenever Countly receives a message, register your `BroadcastReceiver` like this:
 <pre class="prettyprint">
