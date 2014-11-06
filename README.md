@@ -47,11 +47,11 @@ Download [Latest JAR](https://github.com/Countly/countly-sdk-android/releases/la
 Call `Countly.sharedInstance().init(this, "https://YOUR_SERVER", "YOUR_APP_KEY", "OPTIONAL_DEVICE_ID")` in your main activity onCreate, which requires your App key and the URL of your Countly server (use `https://cloud.count.ly` for Countly Cloud). You can either specify your own Device ID, or omit this parameter and add OpenUDID service (it will generate unique device ID automatically) to your `AndroidManifest.xml`:
 
 <pre class="prettyprint">
-<service android:name="org.openudid.OpenUDID_service">
-    <intent-filter>
-        <action android:name="org.openudid.GETUDID" />
-    </intent-filter>
-</service>
+&lt;service android:name="org.openudid.OpenUDID_service">
+    &lt;intent-filter>
+        &lt;action android:name="org.openudid.GETUDID" />
+    &lt;/intent-filter>
+&lt;/service>
 </pre>
 
 * Call `Countly.sharedInstance().onStart()` in onStart.
