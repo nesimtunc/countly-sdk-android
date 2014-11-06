@@ -34,11 +34,11 @@ public class MessagingAdapter {
         }
     }
 
-    public static boolean storeConfiguration(Context context, String serverURL, String appKey, String deviceID) {
+    public static boolean storeConfiguration(Context context, String serverURL, String appKey, String deviceID, Countly.CountlyIdMode idMode) {
         try {
             final Class<?> cls = Class.forName(MESSAGING_CLASS_NAME);
-            final Method method = cls.getMethod("storeConfiguration", Context.class, String.class, String.class, String.class);
-            method.invoke(null, context, serverURL, appKey, deviceID);
+            final Method method = cls.getMethod("storeConfiguration", Context.class, String.class, String.class, String.class, Countly.CountlyIdMode.class);
+            method.invoke(null, context, serverURL, appKey, deviceID, idMode);
             return true;
         }
         catch (Throwable logged) {

@@ -107,6 +107,7 @@ public class CountlyMessaging extends WakefulBroadcastReceiver {
     private static final String PROPERTY_SERVER_URL = "ly.count.android.api.messaging.server.url";
     private static final String PROPERTY_APP_KEY = "ly.count.android.api.messaging.app.key";
     private static final String PROPERTY_DEVICE_ID = "ly.count.android.api.messaging.device.id";
+    private static final String PROPERTY_DEVICE_ID_MODE = "ly.count.android.api.messaging.device.id.mode";
     private static final int PLAY_SERVICES_RESOLUTION_REQUEST = 9000;
     private static GoogleCloudMessaging gcm;
 
@@ -137,7 +138,7 @@ public class CountlyMessaging extends WakefulBroadcastReceiver {
         }
     }
 
-    public static void storeConfiguration(Context context, String serverURL, String appKey, String deviceID) {
+    public static void storeConfiguration(Context context, String serverURL, String appKey, String deviceID, Countly.CountlyIdMode idMode) {
         String label = "";
         try {
             PackageManager p = context.getPackageManager();
@@ -147,13 +148,14 @@ public class CountlyMessaging extends WakefulBroadcastReceiver {
             Log.e(TAG, "Cannot determine app name", t);
         }
         if (Countly.sharedInstance().isLoggingEnabled()) {
-            Log.i(TAG, "Storing configuration: " + label + ", " + serverURL + ", " + appKey + ", " + deviceID);
+            Log.i(TAG, "Storing configuration: " + label + ", " + serverURL + ", " + appKey + ", " + deviceID + ", " + idMode);
         }
         getGCMPreferences(context).edit()
                 .putString(PROPERTY_APPLICATION_TITLE, label)
                 .putString(PROPERTY_SERVER_URL, serverURL)
                 .putString(PROPERTY_APP_KEY, appKey)
-                .putString(PROPERTY_DEVICE_ID, deviceID).commit();
+                .putString(PROPERTY_DEVICE_ID, deviceID)
+                .putInt(PROPERTY_DEVICE_ID_MODE, idMode == null ? -1 : idMode.ordinal()).commit();
     }
 
     protected static boolean initCountly(Context context) {
@@ -161,10 +163,14 @@ public class CountlyMessaging extends WakefulBroadcastReceiver {
         String appKey = getGCMPreferences(context).getString(PROPERTY_APP_KEY, null);
         String deviceID = getGCMPreferences(context).getString(PROPERTY_DEVICE_ID, null);
 
+        Countly.CountlyIdMode idMode = null;
+        int mode = getGCMPreferences(context).getInt(PROPERTY_DEVICE_ID_MODE, -1);
+        if (mode != -1) idMode = Countly.CountlyIdMode.values()[mode];
+
         if (serverURL == null || appKey == null) {
             return false;
         } else {
-            Countly.sharedInstance().init(context, serverURL, appKey, deviceID);
+            Countly.sharedInstance().init(context, serverURL, appKey, deviceID, idMode);
             return true;
         }
     }

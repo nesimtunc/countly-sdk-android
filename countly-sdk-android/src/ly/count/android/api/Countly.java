@@ -70,6 +70,14 @@ public class Countly {
         PRODUCTION,
     }
 
+    /**
+     * Enum used in Countly.init() method which controls what kind of ID Countly should use.
+     */
+    public static enum CountlyIdMode {
+        OPEN_UDID,
+        ADVERTISING_ID,
+    }
+
     // see http://stackoverflow.com/questions/7048198/thread-safe-singletons-in-java
     private static class SingletonHolder {
         static final Countly instance = new Countly();
@@ -119,7 +127,7 @@ public class Countly {
      * @throws java.lang.IllegalStateException if the Countly SDK has already been initialized
      */
     public Countly init(final Context context, final String serverURL, final String appKey) {
-        return init(context, serverURL, appKey, null);
+        return init(context, serverURL, appKey, null, null);
     }
 
     /**
@@ -128,12 +136,28 @@ public class Countly {
      * @param context application context
      * @param serverURL URL of the Countly server to submit data to; use "https://cloud.count.ly" for Countly Cloud
      * @param appKey app key for the application being tracked; find in the Countly Dashboard under Management &gt; Applications
-     * @param deviceID unique ID for the device the app is running on; note that null in deviceID means that Countly will use OpenUDID
+     * @param deviceID unique ID for the device the app is running on; note that null in deviceID means that Countly will fall back to OpenUDID, then, if it's not available, to Google Advertising ID
      * @return Countly instance for easy method chaining
      * @throws java.lang.IllegalArgumentException if context, serverURL, appKey, or deviceID are invalid
      * @throws java.lang.IllegalStateException if init has previously been called with different values during the same application instance
      */
-    public synchronized Countly init(final Context context, final String serverURL, final String appKey, final String deviceID) {
+    public Countly init(final Context context, final String serverURL, final String appKey, final String deviceID) {
+        return init(context, serverURL, appKey, deviceID, null);
+    }
+
+    /**
+     * Initializes the Countly SDK. Call from your main Activity's onCreate() method.
+     * Must be called before other SDK methods can be used.
+     * @param context application context
+     * @param serverURL URL of the Countly server to submit data to; use "https://cloud.count.ly" for Countly Cloud
+     * @param appKey app key for the application being tracked; find in the Countly Dashboard under Management &gt; Applications
+     * @param deviceID unique ID for the device the app is running on; note that null in deviceID means that Countly will fall back to OpenUDID, then, if it's not available, to Google Advertising ID
+     * @param idMode enum value specifying which device ID generation strategy Countly should use: OpenUDID or Google Advertising ID
+     * @return Countly instance for easy method chaining
+     * @throws java.lang.IllegalArgumentException if context, serverURL, appKey, or deviceID are invalid
+     * @throws java.lang.IllegalStateException if init has previously been called with different values during the same application instance
+     */
+    public synchronized Countly init(final Context context, final String serverURL, final String appKey, final String deviceID, CountlyIdMode idMode) {
         if (context == null) {
             throw new IllegalArgumentException("valid context is required");
         }
@@ -146,8 +170,15 @@ public class Countly {
         if (deviceID != null && deviceID.length() == 0) {
             throw new IllegalArgumentException("valid deviceID is required");
         }
-        if (deviceID == null && !OpenUDIDAdapter.isOpenUDIDAvailable()) {
+        if (deviceID == null && idMode == null) {
+            if (OpenUDIDAdapter.isOpenUDIDAvailable()) idMode = CountlyIdMode.OPEN_UDID;
+            else if (AdvertisingIdAdapter.isAdvertisingIdAvailable()) idMode = CountlyIdMode.ADVERTISING_ID;
+        }
+        if (deviceID == null && idMode == CountlyIdMode.OPEN_UDID && !OpenUDIDAdapter.isOpenUDIDAvailable()) {
             throw new IllegalArgumentException("valid deviceID is required because OpenUDID is not available");
+        }
+        if (deviceID == null && idMode == CountlyIdMode.ADVERTISING_ID && !AdvertisingIdAdapter.isAdvertisingIdAvailable()) {
+            throw new IllegalArgumentException("valid deviceID is required because Advertising ID is not available (you need to include Google Play services 4.0+ into your project)");
         }
         if (eventQueue_ != null && (!connectionQueue_.getServerURL().equals(serverURL) ||
                                     !connectionQueue_.getAppKey().equals(appKey) ||
@@ -155,17 +186,25 @@ public class Countly {
             throw new IllegalStateException("Countly cannot be reinitialized with different values");
         }
 
+        // In some cases CountlyMessaging does some background processing, so it needs a way
+        // to start Countly on itself
         if (MessagingAdapter.isMessagingAvailable()) {
-            MessagingAdapter.storeConfiguration(context, serverURL, appKey, deviceID);
+            MessagingAdapter.storeConfiguration(context, serverURL, appKey, deviceID, idMode);
         }
 
         // if we get here and eventQueue_ != null, init is being called again with the same values,
         // so there is nothing to do, because we are already initialized with those values
         if (eventQueue_ == null) {
-            if (deviceID == null && !OpenUDIDAdapter.isInitialized()) {
-                OpenUDIDAdapter.sync(context);
-            } else {
+            if (deviceID != null) {
                 DeviceInfo.setDeviceID(deviceID);
+            } else if (idMode == CountlyIdMode.OPEN_UDID) {
+                if (OpenUDIDAdapter.isInitialized()) {
+                    DeviceInfo.setDeviceID(deviceID);
+                } else {
+                    OpenUDIDAdapter.sync(context);
+                }
+            } else if (idMode == CountlyIdMode.ADVERTISING_ID) {
+                AdvertisingIdAdapter.setAdvertisingId(context);
             }
 
             final CountlyStore countlyStore = new CountlyStore(context);
