@@ -8,7 +8,7 @@ This repository includes the SDK for Android.
 
 ##Installing Android SDK
 
-Installing Android SDK requires two very easy steps. Countly Android SDK uses OpenUDID (which comes ready with the zip file). First step is about OpenUDID requirement and second step is integrating Countly SDK to your project:
+Installing Android SDK requires two very easy steps.
 
 ###1. Add Countly SDK to your project
 
@@ -42,14 +42,40 @@ Download [Latest JAR](https://github.com/Countly/countly-sdk-android/releases/la
 
 ###2. Set up SDK
 
-* Call `Countly.sharedInstance().init(this, "https://YOUR_SERVER", "YOUR_APP_KEY", "OPTIONAL_DEVICE_ID")` in your `Application` subclass' `onCreate` (preferred) or in your main activity `onCreate`, which requires your App key and the URL of your Countly server (use `https://cloud.count.ly` for Countly Cloud). You can either specify your own Device ID, or omit this parameter and add OpenUDID service (it will generate unique device ID automatically) to your `AndroidManifest.xml`:
+First, you'll need to decide which device ID generation strategy to use:
+
+* You just want it to work. In this case simpliest method is best for you:
+
+`Countly.sharedInstance().init(this, "https://YOUR_SERVER", "YOUR_APP_KEY")`.
+
+* You can specify device ID by yourself if you have one (it has to be unique per device): 
+
+`Countly.sharedInstance().init(this, "https://YOUR_SERVER", "YOUR_APP_KEY", "YOUR_DEVICE_ID")`.
+
+* You can rely on Google Advertising ID for device ID generation: 
+
+`Countly.sharedInstance().init(this, "https://YOUR_SERVER", "YOUR_APP_KEY", null, DeviceId.Type.ADVERTISING_ID)`
+
+* Or you can use OpenUDID:
+
+`Countly.sharedInstance().init(this, "https://YOUR_SERVER", "YOUR_APP_KEY", null, DeviceId.Type.OPEN_UDID)`
+
+
+`Countly.sharedInstance().init(...)` method should be called from your `Application` subclass (preferred), or from your main activity `onCreate` method. 
+
+In the case of OpenUDID you'll need to include following declaration into your `AndroidManifest.xml`:
 
 <pre class="prettyprint">
 &lt;service android:name=&quot;org.openudid.OpenUDID_service&quot;&gt;
     &lt;intent-filter&gt;
         &lt;action android:name=&quot;org.openudid.GETUDID&quot; /&gt;
     &lt;/intent-filter&gt;
-&lt;/service&gt;</pre>
+&lt;/service&gt;
+</pre>
+
+In the case of Google Advertising ID, please make sure that you have Google Play services 4.0+ included into your project. Also note that Advertising ID silently falls back to OpenUDID in case it failed to get Advertising ID when Google Play services are not avaialable on a device.
+
+After `Countly.sharedInstance().init(...)` call you'll need to add following calls to all your activities:
 
 * Call `Countly.sharedInstance().onStart()` in onStart.
 * Call `Countly.sharedInstance().onStop()` in onStop.
@@ -57,8 +83,6 @@ Download [Latest JAR](https://github.com/Countly/countly-sdk-android/releases/la
 Additionally, make sure that *INTERNET* permission is set if there's none in your manifest file.
 
 **Note:** Make sure you use App Key (found under Management -> Applications) and not API Key. Entering API Key will not work. 
-
-**Note:** Call `Countly.sharedInstance().init(...)` only once during onCreate of main activity. After that, call `Countly.sharedInstance().onStart()` and `Countly.sharedInstance().onStop()` in each of your activities' `onStart()` and `onStop()` methods. 
 
 ###3. Use Countly Messaging
 Countly can send messages to your users too! To enable it, go to Google API Console and turn GCM on for your app. Then, instead of `ly.count:sdk-android:+` dependency or `sdk-android-14.11.jar`, use `ly.count:sdk-android-messaging:+` and `sdk-android-messaging-14.11.jar` respectively. Additionally, you'll need to enable GCM itself (see `countly-android-example-messaging` folder for example app built with Android Studio):
@@ -115,7 +139,7 @@ dependencies {
  **And, finally, change the way you init Countly**
  <pre class="prettyprint">
 Countly.sharedInstance()
-    .init(this, "YOUR_SERVER", "APP_KEY")
+    .init(this, "YOUR_SERVER", "APP_KEY", null, DeviceId.Type.ADVERTISING_ID)
     .initMessaging(this, CountlyActivity.class, "PROJECT_ID", Countly.CountlyMessagingMode.TEST);
 </pre>
 Where `PROJECT_ID` is ID of your project from Google API Console. Note, that you can use one of two `CountlyMessagingMode`'s: `TEST` and `PRODUCTION`. This feature is very handy when you want to send your message just to your beta testers. 
@@ -137,7 +161,7 @@ registerReceiver(new BroadcastReceiver() {
 </pre>
 
 
-###4. Use some extra features
+###4. Use more extra features
 **How can I make sure that requests to Countly are sent correctly?**
 
 Enable logging: `Countly.sharedInstance().setLoggingEnabled(true)`

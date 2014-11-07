@@ -24,6 +24,7 @@ import java.util.List;
 import java.util.Map;
 
 import ly.count.android.api.Countly;
+import ly.count.android.api.DeviceId;
 
 /**
  * Countly Messaging
@@ -138,7 +139,7 @@ public class CountlyMessaging extends WakefulBroadcastReceiver {
         }
     }
 
-    public static void storeConfiguration(Context context, String serverURL, String appKey, String deviceID, Countly.CountlyIdMode idMode) {
+    public static void storeConfiguration(Context context, String serverURL, String appKey, String deviceID, DeviceId.Type idMode) {
         String label = "";
         try {
             PackageManager p = context.getPackageManager();
@@ -163,9 +164,9 @@ public class CountlyMessaging extends WakefulBroadcastReceiver {
         String appKey = getGCMPreferences(context).getString(PROPERTY_APP_KEY, null);
         String deviceID = getGCMPreferences(context).getString(PROPERTY_DEVICE_ID, null);
 
-        Countly.CountlyIdMode idMode = null;
+        DeviceId.Type idMode = null;
         int mode = getGCMPreferences(context).getInt(PROPERTY_DEVICE_ID_MODE, -1);
-        if (mode != -1) idMode = Countly.CountlyIdMode.values()[mode];
+        if (mode != -1) idMode = DeviceId.Type.values()[mode];
 
         if (serverURL == null || appKey == null) {
             return false;

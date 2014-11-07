@@ -4,7 +4,6 @@ import android.app.Activity;
 import android.content.Context;
 import android.util.Log;
 
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 public class MessagingAdapter {
@@ -34,10 +33,10 @@ public class MessagingAdapter {
         }
     }
 
-    public static boolean storeConfiguration(Context context, String serverURL, String appKey, String deviceID, Countly.CountlyIdMode idMode) {
+    public static boolean storeConfiguration(Context context, String serverURL, String appKey, String deviceID, DeviceId.Type idMode) {
         try {
             final Class<?> cls = Class.forName(MESSAGING_CLASS_NAME);
-            final Method method = cls.getMethod("storeConfiguration", Context.class, String.class, String.class, String.class, Countly.CountlyIdMode.class);
+            final Method method = cls.getMethod("storeConfiguration", Context.class, String.class, String.class, String.class, DeviceId.Type.class);
             method.invoke(null, context, serverURL, appKey, deviceID, idMode);
             return true;
         }
