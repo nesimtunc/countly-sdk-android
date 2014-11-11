@@ -115,13 +115,13 @@ class DeviceInfo {
             case DisplayMetrics.DENSITY_XHIGH:
                 densityStr = "XHDPI";
                 break;
-            case DisplayMetrics.DENSITY_400:
+            case 400:
                 densityStr = "XMHDPI";
                 break;
-            case DisplayMetrics.DENSITY_XXHIGH:
+            case 480:
                 densityStr = "XXHDPI";
                 break;
-            case DisplayMetrics.DENSITY_XXXHIGH:
+            case 640:
                 densityStr = "XXXHDPI";
                 break;
         }
